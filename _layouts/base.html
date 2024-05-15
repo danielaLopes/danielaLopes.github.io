@@ -1,0 +1,35 @@
+---
+---
+<!-- Provides a common base for both index.html and the default layouts -->
+<!DOCTYPE HTML>
+<!--
+    Future Imperfect by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+    <head>
+        <title>{{ page.title }}</title>
+        {% include head.html %}
+    </head>
+
+    {% if page.name != "index.html" %}
+    {% assign body_class = "single is-preload" %}
+    {% else %}
+    {% assign body_class = "is-preload" %}
+    {% endif %}
+
+    <body class="{{ body_class }}">
+        <!-- Wrapper -->
+        <div id="wrapper">
+            <!-- Header -->
+            {% include navigation.html %}
+            <!-- Menu -->
+            {% include menu.html %}
+            {{ content }}
+        </div>
+        {% include scripts.html %}
+    </body>
+
+</html>

@@ -1,0 +1,17 @@
+---
+layout: default
+---
+<h2>{{ page.name }}</h2>
+<h3>{{ page.position}}</h3>
+
+{{ content }}
+<hr />
+<h3>Posts</h3>
+<section>
+    <ul class="posts">
+        {% assign filtered_posts = site.posts | where: "author", page.short_name %}
+        {% for post in filtered_posts %}
+        {% include list_post_preview.html %}
+        {% endfor %}
+    </ul>
+</section>

@@ -1,0 +1,11 @@
+---
+title: Portfolio
+---
+<h1>Latest Posts</h1>
+<section>
+    <div class="mini-posts">
+        {% for post in site.posts %}
+        {% include small_post_preview.html %}
+        {% endfor %}
+    </div>
+</section>

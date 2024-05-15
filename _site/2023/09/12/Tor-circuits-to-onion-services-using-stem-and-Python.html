@@ -1,0 +1,392 @@
+<!-- Provides a common base for both index.html and the default layouts -->
+<!DOCTYPE HTML>
+<!--
+    Future Imperfect by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+    <head>
+        <title>Tor circuits to onion services using stem and Python</title>
+        <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<link rel="stylesheet" href="/assets/css/main.css" />
+    </head>
+
+    
+
+    <body class="single is-preload">
+        <!-- Wrapper -->
+        <div id="wrapper">
+            <!-- Header -->
+            <header id="header">
+    <h1><a href="/index.html">Daniela Lopes</a></h1>
+    <nav class="links">
+        <ul>
+            
+            <li><a href="/">Home</a></li>
+            
+            <li><a href="/portfolio.html">Portfolio</a></li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="#">
+                    <input type="text" name="query" placeholder="Search" />
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+            <!-- Menu -->
+            <section id="menu">
+    <!-- Search -->
+    <section>
+        <form class="search" method="get" action="#">
+            <input type="text" name="query" placeholder="Search" />
+        </form>
+    </section>
+
+    <!-- Links -->
+    <section>
+        <ul class="links">
+            
+            <li>
+                <a href="/">Home</a>
+            </li>
+            
+            <li>
+                <a href="/portfolio.html">Portfolio</a>
+            </li>
+            
+        </ul>
+    </section>
+
+    <!-- Actions -->
+    <!--<section>
+        <ul class="actions stacked">
+            <li><a href="#" class="button large fit">Log In</a></li>
+        </ul>
+    </section>-->
+</section>
+            <!DOCTYPE HTML>
+<!--
+    Future Imperfect by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<!-- Main -->
+<div id="main">
+    <article class="post">
+        
+<header>
+    <div class="title">
+        <h2><a href="#">Tor circuits to onion services using stem and Python</a></h2>
+        <p>
+</p>
+    </div>
+    <div class="meta">
+        <time class="published" datetime="2023-09-12T00:00:00+01:00">12 Sep 2023</time>
+        
+        <!--<a href="" class="author"><span class="name"></span><img
+                src="/images/.jpg" alt="" /></a>-->
+    </div>
+
+    
+        <div class="featured-image">
+            <img src="/images/Tor-logo.png" alt="Featured Image">
+        </div>
+    
+
+</header>
+<h3 id="introduction">Introduction</h3>
+<p>TODO: give brief introduction of tor and my research</p>
+
+<p>During my research project, I studied the feasibility of launching traffic correlation attacks in the Tor network. These attacks were disregarded in the original Tor paper [1], since it was assumed that the adversary would need an unrealistic coverage to be able to observe a large part of the Tor network. Recently, advances in machine learning have motivated traffic correlation attacks like DeepCorr [2] and DeepCoFFEA [3]. So, we decided to study the probability of Tor clients to select a guard node in a given country when establishing circuits.</p>
+
+<h3 id="analyzing-guard-relay-distribution">Analyzing guard relay distribution</h3>
+<p>For this, we used Stem’s Python Tor controller library. With Stem, we can attach to a running Tor’s controller, create new circuits, inspect all the data pertaining the relays in the circuits, change guard nodes, amongst others.</p>
+
+<ol>
+  <li>Create torrc file in data/torrc
+    <pre><code class="language-{bash}">ControlPort 9051
+CookieAuthentication 1
+CookieAuthFileGroupReadable 1
+# Force guard change
+UseEntryGuards 0
+</code></pre>
+  </li>
+  <li>Start Tor client process
+```{python}
+import subprocess
+import shlex
+import time
+import traceback
+import joblib
+import logging
+import logging.config
+logging.config.dictConfig({
+ ‘version’: 1,
+ ‘disable_existing_loggers’: True,
+})</li>
+</ol>
+
+<p>command = “/opt/homebrew/opt/tor/bin/tor -f data/torrc”
+tor_process = subprocess.Popen(shlex.split(command))
+time.sleep(10)
+logging.debug(“Wait for Tor process to start …”)</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+3. Attach to the running controller and force the creation of a new circuit
+```{python}
+SOCKS_PORT = 9050
+CONTROL_PORT = 9051
+
+with Controller.from_port(address="127.0.0.1", port=CONTROL_PORT) as controller:
+    controller.authenticate(password="")
+    logging.debug("Successfully authenticated with Tor control port")
+
+    logging.debug(f"Created {len(controller.get_circuits())} preemptive circuits")
+
+    try:
+        # TODO
+    except Exception as e:
+        logging.error(f"create_new_circuit_and_close() failed after 10 attempts. Continuing ...")
+
+</code></pre></div></div>
+
+<ol>
+  <li>Define the creation of a new circuit:
+```{python}
+guard_nodes = {}</li>
+</ol>
+
+<p>@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_attempt_number=10)
+def create_new_circuit_and_close(controller):
+    logging.debug(f”RETRY create_new_circuit()”)</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>circuit_id = controller.new_circuit(await_build=True, timeout=60)
+circuit = controller.get_circuits()[-1]
+
+guard_ip, middle_ip, exit_ip = get_circuit_data(controller, circuit)
+
+try:
+    country = get_geolocation(guard_ip)
+    if ip in guard_nodes:
+        guard_nodes[ip]['count'] += 1
+    else:
+        guard_nodes[ip]['country'] = country
+except RelayGeolocationException as e:
+    traceback.print_exc()
+    sys.exit(0)
+
+controller.close_circuit(circuit_id) ```
+</code></pre></div></div>
+
+<ol>
+  <li>Get data on circuit relays from Tor descriptors:
+    <pre><code class="language-{python}">def get_circuit_data(controller, circuit):
+ guard_ip, middle_ip, exit_ip = None, None, None
+
+ if circuit.status == CircStatus.BUILT and len(circuit.path) &gt;=3:
+     guard_fingerprint = circuit.path[0][0]  # 
+     middle_fingerprint = circuit.path[1][0]
+     exit_fingerprint = circuit.path[2][0]
+
+     # Get relay details for each hop
+     guard_relay = controller.get_network_status(guard_fingerprint)
+     middle_relay = controller.get_network_status(middle_fingerprint)
+     exit_relay = controller.get_network_status(exit_fingerprint)
+
+ else:
+     logging.debug("Circuit skipped")
+
+ return guard_relay.address, middle_relay.address, exit_relay.address
+</code></pre>
+  </li>
+  <li>Get relays country from their IP:
+```{python}
+class RelayGeolocationException(Exception):
+ def <strong>init</strong>(self, message):
+     super().<strong>init</strong>(message)</li>
+</ol>
+
+<p>def get_geolocation(ip_address):
+    url = f”http://ip-api.com/json/{ip_address}” # Limited by 45 requests per minute
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise RelayGeolocationException(f”Could not fetch geolocation for {ip_address} due to {response.status_code} error”)
+    data = response.json()</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>return data['country_code'] ```
+</code></pre></div></div>
+
+<ol>
+  <li>Gather data for a great number of clients and stop the Tor process:
+```{python}
+BASE_DIR = ‘./results/data/’
+GUARD_NODES_FILE = f”{BASE_DIR}client_guard_nodes.joblib”
+MIDDLE_NODES_FILE = f”{BASE_DIR}client_middle_nodes.joblib”
+EXIT_NODES_FILE = f”{BASE_DIR}client_exit_nodes.joblib”</li>
+</ol>
+
+<p>def stop_tor(tor_process):
+    tor_process.terminate()
+    tor_process.wait()  # Wait for the process to finish</p>
+
+<p>try:
+    num_clients = 10000
+    for client_id in tqdm(range(num_clients)):
+        generate_client_circuits(client_id)
+        time.sleep(10)</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    # Updates on every iteration
+    joblib.dump(guard_nodes, GUARD_NODES_FILE)
+    joblib.dump(middle_nodes, MIDDLE_NODES_FILE)
+    joblib.dump(exit_nodes, EXIT_NODES_FILE)
+</code></pre></div></div>
+
+<p>except Exception as e:
+    traceback.print_exc()</p>
+
+<p>finally:
+    stop_tor(tor_process)
+    logging.debug(“Wait for Tor process to stop …”)
+    time.sleep(10)
+    logging.debug(“Exited Tor process cleanly at the end”)</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+### Guard Coverage Visualization
+Now that we retrieved a lot of data on the country where Tor guard relays are located, we will determine the guard probability by country.
+
+1. Setup necessary libraries and collected data:
+```{python}
+import geopandas
+import pycountry
+import pandas as pd
+import numpy as np
+import matplotlib.colors as mcolors
+
+guard_nodes = joblib.load(GUARD_NODES_FILE)
+</code></pre></div></div>
+
+<ol>
+  <li>```{python}
+def convert_alpha2_to_alpha3_country_code(alpha2_code):
+country = pycountry.countries.get(alpha_2=alpha2_code)
+if country:
+    return country.alpha_3
+return None</li>
+</ol>
+
+<p>def get_country_codes_count_df():
+    df = pd.DataFrame(list(country_codes_count.items()), columns=[‘code’, ‘guards_count’])
+    df[‘code’] = df[‘code’].apply(convert_alpha2_to_alpha3_country_code)
+    return df</p>
+
+<p>country_codes_count_df = get_country_codes_count_df()</p>
+
+<p>total_occurrences = country_codes_count_df[‘guards_count’].sum()
+country_codes_count_df[‘guards_probability’] = country_codes_count_df[‘guards_count’] / total_occurrences</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+3. 
+```{python}
+
+</code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Name</th>
+      <th style="text-align: left">Guards probability</th>
+      <th style="text-align: left">Cumulative guards probability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Germany</td>
+      <td style="text-align: left">30.0%</td>
+      <td style="text-align: left">30.0%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">United States of America</td>
+      <td style="text-align: left">24.75%</td>
+      <td style="text-align: left">54.75%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Finland</td>
+      <td style="text-align: left">5.97%</td>
+      <td style="text-align: left">60.72%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Canada</td>
+      <td style="text-align: left">4.09%</td>
+      <td style="text-align: left">64.81%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Netherlands</td>
+      <td style="text-align: left">4.07%</td>
+      <td style="text-align: left">68.88%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Poland</td>
+      <td style="text-align: left">3.49%</td>
+      <td style="text-align: left">72.37%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">United Kingdom</td>
+      <td style="text-align: left">3.35%</td>
+      <td style="text-align: left">75.72%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Switzerland</td>
+      <td style="text-align: left">2.62%</td>
+      <td style="text-align: left">78.34%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Sweden</td>
+      <td style="text-align: left">2.08%</td>
+      <td style="text-align: left">80.42%</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Czechia</td>
+      <td style="text-align: left">1.63%</td>
+      <td style="text-align: left">82.05%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>[1] Roger Dingledine, Nick Mathewson, and Paul Syverson. 2004. Tor: the second-generation onion router. In Proceedings of the 13th conference on USENIX Security Symposium - Volume 13 (SSYM’04). USENIX Association, USA, 21.</p>
+
+<p>[2] Milad Nasr, Alireza Bahramali, and Amir Houmansadr. 2018. DeepCorr: Strong Flow Correlation Attacks on Tor Using Deep Learning. In Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security (CCS ‘18). Association for Computing Machinery, New York, NY, USA, 1962–1976. https://doi.org/10.1145/3243734.3243824</p>
+
+<p>[3] Se Eun Oh, Taiji Yang, Nate Mathews, James K Holland, Mohammad Saidur Rahman, Nicholas Hopper, and Matthew Wright, DeepCoFFEA: Improved Flow Correlation Attacks on Tor via Metric Learning and Amplification. 2022 IEEE Symposium on Security and Privacy (SP ‘22), San Francisco, CA, USA, 2022, pp. 1915-1932, https://doi.org/10.1109/SP46214.2022.9833801.</p>
+
+    </article>
+</div>
+<!-- Footer -->
+<section id="footer">
+    <ul class="icons">
+        <li><a href="https://www.linkedin.com/in/daniela-lopes-786447b6/" class="icon brands fa-linkedin"><span class="label">LinkedIn</span></a></li>
+        <li><a href="https://github.com/danielaLopes" class="icon brands fa-github"><span class="label">Github</span></a></li>
+        <li><a href="https://scholar.google.com/citations?user=wzTQAAAAJ&user=qn_wzTQAAAAJ" class="icon solid fa-graduation-cap"><span class="label">Google Scholar</span></a></li>
+        <li><a href="mailto:danielalopes97@gmail.com" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
+    </ul>
+    <p class="copyright">&copy; Untitled. Design: <a href="http://html5up.net">HTML5 UP</a>. Images: <a
+            href="http://unsplash.com">Unsplash</a>.</p>
+</section>
+        </div>
+        <!-- Scripts -->
+<script src="/assets/js/jquery.min.js"></script>
+<script src="/assets/js/browser.min.js"></script>
+<script src="/assets/js/breakpoints.min.js"></script>
+<script src="/assets/js/util.js"></script>
+<script src="/assets/js/main.js"></script>
+    </body>
+
+</html>

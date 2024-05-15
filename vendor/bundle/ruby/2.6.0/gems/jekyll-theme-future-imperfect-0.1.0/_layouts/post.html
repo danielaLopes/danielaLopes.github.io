@@ -1,0 +1,17 @@
+---
+layout: default
+---
+{% assign page_date = page.date | date_to_string %}
+<header>
+    <div class="title">
+        <h2><a href="#">{{ page.title }}</a></h2>
+        <p>{{ page.subtitle | markdownify }}</p>
+    </div>
+    <div class="meta">
+        <time class="published" datetime="{{ page_date | date_to_xmlschema }}">{{ page_date | date_to_string }}</time>
+        {% assign author = site.authors | where: "short_name", page.author | first %}
+        <a href="{{ author.url }}" class="author"><span class="name">{{ author.name }}</span><img
+                src="/images/{{ author.short_name }}.jpg" alt="" /></a>
+    </div>
+</header>
+{{ content }}

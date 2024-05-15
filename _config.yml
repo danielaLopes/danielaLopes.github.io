@@ -1,0 +1,38 @@
+title: Daniela Lopes
+description: >- # this means to ignore newlines until "baseurl:"
+  A place to write about side projects, machine learning, data visualization, and privacy.  
+baseurl: "/" # the subpath of your site, e.g. /blog
+url: "danielaLopes.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+
+social:
+  linkedin: https://www.linkedin.com/in/daniela-lopes-786447b6/
+  github: https://github.com/danielaLopes
+  google_scholar: https://scholar.google.com/citations?user=wzTQAAAAJ&user=qn_wzTQAAAAJ
+  email: mailto:danielalopes97@gmail.com
+
+authors:
+  - short_name: Daniela
+    name: Daniela Lopes
+
+# Some recommended defaults for the theme
+collections:
+  authors:
+    output: true
+
+defaults:
+  - scope:
+      path: ""
+      type: authors
+    values:
+      layout: author
+  - scope:
+      path: ""
+      type: post
+    values:
+      layout: post
+      author: default
+      preview_image: pic01.jpg
+  - scope:
+      path: ""
+    values:
+      layout: default

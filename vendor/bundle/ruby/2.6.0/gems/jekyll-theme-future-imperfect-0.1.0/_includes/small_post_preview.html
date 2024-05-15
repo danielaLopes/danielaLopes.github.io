@@ -1,0 +1,12 @@
+<!-- Mini Post -->
+<article class="mini-post">
+    <header>
+        <h3><a href="{{ post.url }}">{{ post.title }}</a></h3>
+        <time class="published" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date_to_string}}</time>
+        {% assign author = site.authors | where: "short_name", post.author | first %}
+        <a href="{{ author.url }}" class="author"><img src="/images/{{ author.short_name }}.jpg" alt="" /></a>
+    </header>
+    <a href="{{ post.url }}" class="image">
+        <img src="images/{{ post.preview_image }}" />
+    </a>
+</article>
